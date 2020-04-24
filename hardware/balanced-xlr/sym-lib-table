@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name balanced-xlr-rescue)(type Legacy)(uri ${KIPRJMOD}/balanced-xlr-rescue.lib)(options "")(descr ""))
+)
