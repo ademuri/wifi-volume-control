@@ -1,0 +1,11 @@
+Designator,Val,Package,Mid X,Mid Y,Rotation,Layer
+C1,0.1uF,C_0603_1608Metric_Pad1.05x0.95mm_HandSolder,107.8,-104.2,180,top
+R1,4k7,R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,107.8,-99.6,180,top
+R2,4k7,R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,107.8,-96.4,180,top
+R3,2k2,R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,118.8,-112.6,0,top
+R4,2k2,R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,123.2,-112.6,180,top
+R5,2k2,R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,96.8,-112.6,180,top
+R6,2k2,R_0603_1608Metric_Pad1.05x0.95mm_HandSolder,92.4,-112.6,180,top
+SW1,SW_Push,SW_TACTILE_5.1MM_TS-1187A-C-D-B,59.6,-83.8,180,top
+SW2,SW_Push,SW_TACTILE_5.1MM_TS-1187A-C-D-B,75,-83.8,0,top
+U2,MCP4661,TSSOP-14_4.4x5mm_P0.65mm,107.8,-108.2,0,top
