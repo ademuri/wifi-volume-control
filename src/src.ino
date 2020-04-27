@@ -8,11 +8,21 @@
 #include "constants.h"
 #include "html.h"
 #include "mcp4661.h"
+#include "steps.h"
 
 AsyncWebServer server(80);
 Mcp4661 pot(/* SDA */ 2, /* SCL */ 1);
 
 uint16_t volume = 0;
+
+String processor(const String& var) {
+  if(var == "NUM_STEPS") {
+    return String(kSteps.size());
+  }
+
+  Serial.printf("Warning: unhandled template var '%s'\n", var.c_str());
+  return String();
+}
 
 void setup() {
   Serial.begin(115200);
@@ -28,7 +38,18 @@ void setup() {
     pot.write_register(Mcp4661::kNonVolatileWiper1, volume_1);
   }
   Serial.printf("Read inital volume: %u\n", volume_0);
-  volume = volume_0;
+  // Backconvert from volume to stepped volume
+  if (volume_0 != 0) {
+    for (unsigned int i = 0; i < kSteps.size(); i++) {
+      // kSteps is sorted ascending, so this will pick a close volume. This
+      // isn't totally optimal, but the stored value should always be in
+      // kSteps during normal operation.
+      if (volume <= kSteps[i]) {
+        volume = i;
+        break;
+      }
+    }
+  }
 
   Serial.print("Connecting to wifi: ");
   WiFi.mode(WIFI_STA);

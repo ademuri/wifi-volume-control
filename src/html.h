@@ -25,7 +25,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 <body>
   <h3>Volume Control</h3>
   <div>
-    <input type="range" min="0" max="256" id="volume" name="volume" oninput="setVolume(this.value)">
+    <input type="range" min="0" max="%NUM_STEPS%" id="volume" name="volume" oninput="setVolume(this.value)">
     <label for="volume">Volume</label>
   </div>
   <div id="error" style="display: none;">
