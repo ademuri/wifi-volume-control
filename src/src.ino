@@ -7,13 +7,28 @@
 
 #include "constants.h"
 #include "html.h"
+#include "mcp4661.h"
 
 AsyncWebServer server(80);
+Mcp4661 pot(/* SDA */ 2, /* SCL */ 1);
 
 uint16_t volume = 0;
 
 void setup() {
   Serial.begin(115200);
+
+  pot.begin();
+  uint16_t volume_0 = pot.read_register(Mcp4661::kNonVolatileWiper0);
+  uint16_t volume_1 = pot.read_register(Mcp4661::kNonVolatileWiper1);
+  if (volume_0 != volume_1) {
+    Serial.printf("Warning: read volumes differ. %u vs %u\n", volume_0, volume_1);
+    volume_0 = 0;
+    volume_1 = 0;
+    pot.write_register(Mcp4661::kNonVolatileWiper0, volume_0);
+    pot.write_register(Mcp4661::kNonVolatileWiper1, volume_1);
+  }
+  Serial.printf("Read inital volume: %u\n", volume_0);
+  volume = volume_0;
 
   Serial.print("Connecting to wifi: ");
   WiFi.mode(WIFI_STA);
@@ -65,7 +80,8 @@ void setup() {
     ostream << volume;
     request->send_P(200, "text/plain", ostream.str().c_str());
   });
-  // Note: use POST, not PUT, so that we don't have to include the regex library for URL matching, which is large
+  // Note: use POST, not PUT, so that we don't have to include the regex
+  // library for URL matching, which is large
   server.on("/volume", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (request->params() == 0) {
       Serial.println("No params in request");
@@ -82,7 +98,8 @@ void setup() {
     }
     
     volume = String(param->value()).toInt();
-    // TODO: actually set the volume on the digital pot
+    pot.write_register(Mcp4661::kNonVolatileWiper0, volume);
+    pot.write_register(Mcp4661::kNonVolatileWiper1, volume);
     request->send(200);
   });
 
