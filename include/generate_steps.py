@@ -10,6 +10,8 @@ header = """
 
 static const std::vector<uint16_t> kSteps = {
   // idx         db  diff  diff_from_selected
+
+     256,
 """
 
 footer = """
@@ -32,23 +34,22 @@ last_step_db = 0
 num_chosen = 1
 
 def db_for_step(step):
-    step_resistance = each_step * step
-    step_db = 20 * math.log10(step_resistance / (step_resistance + input_resistor * 2 + speaker_input_resistance))
+    step_resistance = digital_pot_total_resistance - (each_step * step)
+    if step_resistance == 0:
+        return 0
+    total_input_resistance = input_resistor * 2 + speaker_input_resistance
+    step_db = 20 * math.log10(step_resistance / (step_resistance + total_input_resistance))
     return step_db
 
 print(header)
 lines = []
-for i in range(digital_pot_steps, 0, -1):
+for i in range(0, digital_pot_steps):
     step_db = db_for_step(i)
     difference = abs(step_db - last_step_db)
     chosen_difference = abs(step_db - last_chosen_step_db)
     distance_from_target = abs(target_step_db - chosen_difference)
-    if i > 1:
-        next_step_db = abs(db_for_step(i - 1) - last_chosen_step_db)
-        next_distance_from_target = abs(target_step_db - next_step_db)
-    else:
-        next_step_db = 0
-        next_distance_from_target = 100
+    next_step_db = abs(db_for_step(i + 1) - last_chosen_step_db)
+    next_distance_from_target = abs(target_step_db - next_step_db)
 
     if chosen_difference >= target_step_db or (distance_from_target < next_distance_from_target):
         last_chosen_step_db = step_db
@@ -63,6 +64,5 @@ for i in range(digital_pot_steps, 0, -1):
 # the minimum value.
 lines.reverse()
 print('\n'.join(lines))
-print('       0, // Off means (almost) no resistance -> no attenuation')
 print(f'  // {num_chosen} values')
 print(footer)
