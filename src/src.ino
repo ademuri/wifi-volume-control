@@ -11,13 +11,14 @@
 #include "steps.h"
 
 AsyncWebServer server(80);
-Mcp4661 pot(/* SDA */ 2, /* SCL */ 1);
+Mcp4661 pot(/* SDA */ D2, /* SCL */ D1);
 
 uint16_t volume = 0;
+uint16_t new_volume = 0;
 
 String processor(const String& var) {
   if(var == "NUM_STEPS") {
-    return String(kSteps.size());
+    return String(kSteps.size() - 1);
   }
 
   Serial.printf("Warning: unhandled template var '%s'\n", var.c_str());
@@ -26,8 +27,12 @@ String processor(const String& var) {
 
 void setup() {
   Serial.begin(115200);
+  Serial.println("Booted.");
+  delay(500);
+  Serial.println("");
 
   pot.begin();
+  delay(5);
   uint16_t volume_0 = pot.read_register(Mcp4661::kNonVolatileWiper0);
   uint16_t volume_1 = pot.read_register(Mcp4661::kNonVolatileWiper1);
   if (volume_0 != volume_1) {
@@ -50,6 +55,7 @@ void setup() {
       }
     }
   }
+  new_volume = volume;
 
   Serial.print("Connecting to wifi: ");
   WiFi.mode(WIFI_STA);
@@ -94,7 +100,7 @@ void setup() {
   ArduinoOTA.begin(/* useMDNS */ false);
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send_P(200, "text/html", index_html);
+    request->send_P(200, "text/html", index_html, processor);
   });
   server.on("/volume", HTTP_GET, [](AsyncWebServerRequest *request) {
     std::ostringstream ostream;
@@ -118,9 +124,7 @@ void setup() {
       return;
     }
     
-    volume = String(param->value()).toInt();
-    pot.write_register(Mcp4661::kNonVolatileWiper0, volume);
-    pot.write_register(Mcp4661::kNonVolatileWiper1, volume);
+    new_volume = String(param->value()).toInt();
     request->send(200);
   });
 
@@ -135,8 +139,23 @@ void setup() {
   }
 }
 
+uint32_t alive_at = 0;
 void loop() {
   ArduinoOTA.handle();
   MDNS.update();
   delay(100);
+
+  if (millis() > alive_at) {
+    Serial.println(millis());
+    alive_at = millis() + 5000;
+  }
+  if (new_volume != volume) {
+    Serial.printf("Writing new volume: %u\n", kSteps[new_volume]);
+    pot.write_register(Mcp4661::kNonVolatileWiper0, kSteps[new_volume]);
+    pot.write_register(Mcp4661::kNonVolatileWiper1, kSteps[new_volume]);
+    pot.write_register(Mcp4661::kVolatileWiper0, kSteps[new_volume]);
+    pot.write_register(Mcp4661::kVolatileWiper1, kSteps[new_volume]);
+
+    volume = new_volume;
+  }
 }

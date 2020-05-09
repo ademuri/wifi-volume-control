@@ -1,4 +1,5 @@
 #include <mcp4661.h>
+#include <Arduino.h>
 
 Mcp4661::Mcp4661(int sda, int scl) : sda_(sda), scl_(scl){
 }
@@ -10,6 +11,7 @@ void Mcp4661::begin() {
 uint16_t Mcp4661::read_register(uint8_t register_address) {
   const uint8_t command = 0b1100 | (register_address << 4);
 
+  // Set last bit to 1 for read
   wire_.beginTransmission(kDefaultAddress);
   wire_.write(command);
   wire_.endTransmission();
@@ -20,17 +22,19 @@ uint16_t Mcp4661::read_register(uint8_t register_address) {
   msb = wire_.read();
   lsb = wire_.read();
   wire_.endTransmission();
+  delay(2);
 
-  return (msb << 8) | lsb;
+  return ((msb & 0b11) << 8) | lsb;
 }
 
 void Mcp4661::write_register(uint8_t register_address, uint16_t value) {
   // Last 2 bits are the 2 MSB of value
-  const uint8_t command = (register_address << 4) | (value & 0x200 >> 10);
+  const uint8_t command = (register_address << 4) | ((value & 0x100) >> 8);
   const uint8_t data = value & 0xFF;
   
   wire_.beginTransmission(kDefaultAddress);
   wire_.write(command);
   wire_.write(data);
   wire_.endTransmission();
+  delay(2);
 }
