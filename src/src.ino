@@ -4,6 +4,7 @@
 #include <ESPAsyncWebServer.h>
 #include <iomanip>
 #include <string>
+#include <debounce-filter.h>
 
 #include "constants.h"
 #include "html.h"
@@ -12,6 +13,8 @@
 
 AsyncWebServer server(80);
 Mcp4661 pot(/* SDA */ D2, /* SCL */ D1);
+DebounceFilter *upButton;
+DebounceFilter *downButton;
 
 uint16_t volume = 0;
 uint16_t new_volume = 0;
@@ -30,6 +33,11 @@ void setup() {
   Serial.println("Booted.");
   delay(500);
   Serial.println("");
+
+  pinMode(D7, INPUT_PULLUP);
+  pinMode(D6, INPUT_PULLUP);
+  upButton = new DebounceFilter([=]() { return !digitalRead(D7); });
+  downButton = new DebounceFilter([=]() { return !digitalRead(D6); });
 
   pot.begin();
   delay(5);
@@ -143,14 +151,18 @@ uint32_t alive_at = 0;
 void loop() {
   ArduinoOTA.handle();
   MDNS.update();
-  delay(100);
+  upButton->Run();
+  downButton->Run();
 
-  if (millis() > alive_at) {
-    Serial.println(millis());
-    alive_at = millis() + 5000;
+  if (upButton->Rose() && new_volume < kSteps.size() - 1) {
+    new_volume++;
   }
+  if (downButton->Rose() && new_volume > 0) {
+    new_volume--;
+  }
+
   if (new_volume != volume) {
-    Serial.printf("Writing new volume: %u\n", kSteps[new_volume]);
+    Serial.printf("Writing new volume: %u (%u)\n", new_volume, kSteps[new_volume]);
     pot.write_register(Mcp4661::kNonVolatileWiper0, kSteps[new_volume]);
     pot.write_register(Mcp4661::kNonVolatileWiper1, kSteps[new_volume]);
     pot.write_register(Mcp4661::kVolatileWiper0, kSteps[new_volume]);
@@ -158,4 +170,6 @@ void loop() {
 
     volume = new_volume;
   }
+
+  delay(10);
 }
