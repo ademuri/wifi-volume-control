@@ -69,6 +69,8 @@ function setVolume(volume) {
   }
 
   document.getElementById("volume").value = volume;
+  // Make sure volume is in range
+  volume = document.getElementById("volume").value;
   var xhr = new XMLHttpRequest();
   xhr.timeout = 10 * 1000;
   xhr.onreadystatechange = function() { // Call a function when the state changes.

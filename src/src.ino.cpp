@@ -1,3 +1,6 @@
+# 1 "/tmp/tmpwt6B6w"
+#include <Arduino.h>
+# 1 "/home/adam/hardware/wifi-volume-control/src/src.ino"
 #include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
@@ -13,13 +16,17 @@
 #include "steps.h"
 
 AsyncWebServer server(80);
-Mcp4661 pot(/* SDA */ D2, /* SCL */ D1);
+Mcp4661 pot( D2, D1);
 DebounceFilter *upButton;
 DebounceFilter *downButton;
 
 uint16_t volume = 0;
 uint16_t new_volume = 0;
-
+void gratuitous_arp();
+String processor(const String& var);
+void setup();
+void loop();
+#line 23 "/home/adam/hardware/wifi-volume-control/src/src.ino"
 void gratuitous_arp() {
   netif *n = netif_list;
   while (n) {
@@ -43,7 +50,7 @@ void setup() {
   delay(500);
   Serial.println("");
 
-  // WiFi sleep may cause connectivity issues
+
   wifi_set_sleep_type(NONE_SLEEP_T);
 
   pinMode(D7, INPUT_PULLUP);
@@ -60,21 +67,21 @@ void setup() {
     volume_0 = kSteps.size();
     volume_1 = volume_0;
 
-    // Note: writing to non-volatile storage takes a few milliseconds. Writing
-    // too soon after the first write silently fails, so just wait a safe
-    // amount of time in between.
+
+
+
     pot.write_register(Mcp4661::kNonVolatileWiper0, volume_0);
     delay(5);
     pot.write_register(Mcp4661::kNonVolatileWiper1, volume_1);
     delay(5);
   }
   Serial.printf("Read inital volume: %u\n", volume_0);
-  // Backconvert from volume to stepped volume
+
   if (volume_0 != 0) {
     for (unsigned int i = 0; i < kSteps.size(); i++) {
-      // kSteps is sorted ascending, so this will pick a close volume. This
-      // isn't totally optimal, but the stored value should always be in
-      // kSteps during normal operation.
+
+
+
       if (volume <= kSteps[i]) {
         volume = i;
         break;
@@ -101,7 +108,7 @@ void setup() {
       String type;
       if (ArduinoOTA.getCommand() == U_FLASH) {
         type = "sketch";
-      } else { // U_SPIFFS
+      } else {
         type = "filesystem";
       }
 
@@ -124,7 +131,7 @@ void setup() {
       else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
       else if (error == OTA_END_ERROR) Serial.println("End Failed");
     });
-  ArduinoOTA.begin(/* useMDNS */ false);
+  ArduinoOTA.begin( false);
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send_P(200, "text/html", index_html, processor);
@@ -134,8 +141,8 @@ void setup() {
     ostream << volume;
     request->send_P(200, "text/plain", ostream.str().c_str());
   });
-  // Note: use POST, not PUT, so that we don't have to include the regex
-  // library for URL matching, which is large
+
+
   server.on("/volume", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (request->params() == 0) {
       Serial.println("No params in request");
@@ -143,14 +150,14 @@ void setup() {
       return;
     }
 
-    // Assume there is only one parameter
+
     AsyncWebParameter* param = request->getParam(0);
     if (!param->isPost()) {
       Serial.println("Invalid param type");
       request->send(400);
       return;
     }
-    
+
     new_volume = String(param->value()).toInt();
     if (new_volume >= kSteps.size()) {
       new_volume = 0;
