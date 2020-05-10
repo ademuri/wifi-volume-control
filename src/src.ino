@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <string>
 #include <debounce-filter.h>
+#include <lwip/etharp.h>
 
 #include "constants.h"
 #include "html.h"
@@ -18,6 +19,14 @@ DebounceFilter *downButton;
 
 uint16_t volume = 0;
 uint16_t new_volume = 0;
+
+void gratuitous_arp() {
+  netif *n = netif_list;
+  while (n) {
+    etharp_gratuitous(n);
+    n = n->next;
+  }
+}
 
 String processor(const String& var) {
   if(var == "NUM_STEPS") {
@@ -34,6 +43,9 @@ void setup() {
   delay(500);
   Serial.println("");
 
+  // WiFi sleep may cause connectivity issues
+  wifi_set_sleep_type(NONE_SLEEP_T);
+
   pinMode(D7, INPUT_PULLUP);
   pinMode(D6, INPUT_PULLUP);
   upButton = new DebounceFilter([=]() { return !digitalRead(D7); });
@@ -41,7 +53,8 @@ void setup() {
 
   pot.begin();
   delay(5);
-  uint16_t volume_0 = pot.read_register(Mcp4661::kNonVolatileWiper0);
+  // TODO: write the current values to non-volatile storage, and read them on startup. Currently writing/reading NVWiper1 seems to be flaky.
+  /*uint16_t volume_0 = pot.read_register(Mcp4661::kNonVolatileWiper0);
   uint16_t volume_1 = pot.read_register(Mcp4661::kNonVolatileWiper1);
   if (volume_0 != volume_1) {
     Serial.printf("Warning: read volumes differ. %u vs %u\n", volume_0, volume_1);
@@ -62,11 +75,13 @@ void setup() {
         break;
       }
     }
-  }
-  new_volume = volume;
+  }*/
+  //new_volume = volume;
+  new_volume = kSteps.size();
 
   Serial.print("Connecting to wifi: ");
   WiFi.mode(WIFI_STA);
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);
   WiFi.begin(kSsid, kPassword);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -139,7 +154,7 @@ void setup() {
   server.begin();
   Serial.println("Started server.");
 
-  if (MDNS.begin("volume-control")) {
+  if (MDNS.begin("volume-control", WiFi.localIP(), 1)) {
     MDNS.addService("http", "tcp", 80);
     Serial.println("mDNS responder started");
   } else {
@@ -147,7 +162,6 @@ void setup() {
   }
 }
 
-uint32_t alive_at = 0;
 void loop() {
   ArduinoOTA.handle();
   MDNS.update();
@@ -163,8 +177,6 @@ void loop() {
 
   if (new_volume != volume) {
     Serial.printf("Writing new volume: %u (%u)\n", new_volume, kSteps[new_volume]);
-    pot.write_register(Mcp4661::kNonVolatileWiper0, kSteps[new_volume]);
-    pot.write_register(Mcp4661::kNonVolatileWiper1, kSteps[new_volume]);
     pot.write_register(Mcp4661::kVolatileWiper0, kSteps[new_volume]);
     pot.write_register(Mcp4661::kVolatileWiper1, kSteps[new_volume]);
 
