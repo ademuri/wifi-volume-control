@@ -10,9 +10,6 @@ const char index_html[] PROGMEM = R"rawliteral(
      font-family: Arial;
      font-size: 3.0rem;
     }
-    .label {
-      font-style: italic;
-    }
     #error {
       background-color: red;
     }
@@ -20,26 +17,49 @@ const char index_html[] PROGMEM = R"rawliteral(
       font-size: 0.5rem;
       margin: 0.4rem;
     }
+    .container {
+      width: 100%%;
+      max-width: 600px;
+    }
+    .container div {
+      margin: 1em 0em;
+    }
+    .volume-button {
+      font-size: 2em;
+      padding: 0.2em 0.4em;
+    }
+    #volume {
+      width: 100%%;
+    }
   </style>
 </head>
 <body>
   <h3>Volume Control</h3>
-  <div>
-    <input type="range" min="0" max="%NUM_STEPS%" id="volume" name="volume" oninput="setVolume(this.value)">
-    <label for="volume">Volume</label>
-  </div>
-  <div id="error" style="display: none;">
-    Error Connecting
+  <div class="container">
+    <div>
+      <input type="range" min="0" max="%NUM_STEPS%" id="volume" name="volume" oninput="setVolume(this.value)">
+    </div>
+    <div>
+      <input type="button" value="-" class="volume-button" style="float: left;" onclick="changeVolume(-1)">
+      <input type="button" value="+" class="volume-button" style="float: right;" onclick="changeVolume(1)">
+    </div>
+    <div id="error" style="display: none;">
+      Error Connecting
+    </div>
   </div>
 </body>
 
 <script>
 const getDelay = 5 * 1000;
 let getTimer = setInterval(getVolume, getDelay);
-setTimer(getVolume, 0);
+setTimeout(getVolume, 0);
 
 function showError() {
   document.getElementById("error").style.display = "block";
+}
+
+function changeVolume(change) {
+  setVolume(change + parseInt(document.getElementById("volume").value));
 }
 
 function setVolume(volume) {
@@ -48,6 +68,7 @@ function setVolume(volume) {
     getTimer = -1;
   }
 
+  document.getElementById("volume").value = volume;
   var xhr = new XMLHttpRequest();
   xhr.timeout = 10 * 1000;
   xhr.onreadystatechange = function() { // Call a function when the state changes.
