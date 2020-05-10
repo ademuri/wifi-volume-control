@@ -9,6 +9,8 @@ const char index_html[] PROGMEM = R"rawliteral(
     html {
      font-family: Arial;
      font-size: 3.0rem;
+     background-color: black;
+     color: white;
     }
     #error {
       background-color: red;
@@ -27,6 +29,9 @@ const char index_html[] PROGMEM = R"rawliteral(
     .volume-button {
       font-size: 2em;
       padding: 0.2em 0.4em;
+      background-color: grey;
+      color: white;
+      border: none;
     }
     #volume {
       width: 100%%;
