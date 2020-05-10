@@ -22,7 +22,6 @@ uint16_t Mcp4661::read_register(uint8_t register_address) {
   msb = wire_.read();
   lsb = wire_.read();
   wire_.endTransmission();
-  delay(2);
 
   return ((msb & 0b11) << 8) | lsb;
 }
@@ -36,5 +35,4 @@ void Mcp4661::write_register(uint8_t register_address, uint16_t value) {
   wire_.write(command);
   wire_.write(data);
   wire_.endTransmission();
-  delay(2);
 }

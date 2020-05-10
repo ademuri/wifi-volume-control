@@ -53,15 +53,20 @@ void setup() {
 
   pot.begin();
   delay(5);
-  // TODO: write the current values to non-volatile storage, and read them on startup. Currently writing/reading NVWiper1 seems to be flaky.
-  /*uint16_t volume_0 = pot.read_register(Mcp4661::kNonVolatileWiper0);
+  uint16_t volume_0 = pot.read_register(Mcp4661::kNonVolatileWiper0);
   uint16_t volume_1 = pot.read_register(Mcp4661::kNonVolatileWiper1);
   if (volume_0 != volume_1) {
     Serial.printf("Warning: read volumes differ. %u vs %u\n", volume_0, volume_1);
-    volume_0 = 0;
-    volume_1 = 0;
+    volume_0 = kSteps.size();
+    volume_1 = volume_0;
+
+    // Note: writing to non-volatile storage takes a few milliseconds. Writing
+    // too soon after the first write silently fails, so just wait a safe
+    // amount of time in between.
     pot.write_register(Mcp4661::kNonVolatileWiper0, volume_0);
+    delay(5);
     pot.write_register(Mcp4661::kNonVolatileWiper1, volume_1);
+    delay(5);
   }
   Serial.printf("Read inital volume: %u\n", volume_0);
   // Backconvert from volume to stepped volume
@@ -75,9 +80,8 @@ void setup() {
         break;
       }
     }
-  }*/
-  //new_volume = volume;
-  new_volume = kSteps.size();
+  }
+  new_volume = volume;
 
   Serial.print("Connecting to wifi: ");
   WiFi.mode(WIFI_STA);
@@ -162,6 +166,7 @@ void setup() {
   }
 }
 
+int32_t write_nonvolatile_at = -1;
 void loop() {
   ArduinoOTA.handle();
   MDNS.update();
@@ -181,6 +186,16 @@ void loop() {
     pot.write_register(Mcp4661::kVolatileWiper1, kSteps[new_volume]);
 
     volume = new_volume;
+    write_nonvolatile_at = millis() + 10 * 1000;
+  }
+
+  if (write_nonvolatile_at > 0 && millis() > write_nonvolatile_at) {
+    Serial.println("Writing volume to non-volatile");
+    pot.write_register(Mcp4661::kNonVolatileWiper0, kSteps[new_volume]);
+    delay(5);
+    pot.write_register(Mcp4661::kNonVolatileWiper1, kSteps[new_volume]);
+    delay(5);
+    write_nonvolatile_at = -1;
   }
 
   delay(10);
